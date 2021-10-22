@@ -22,6 +22,7 @@ VC_FEE_RULE = """
                         -i programs \\
                         -o scratch \\
                         -o results ) )
+        rm -rf target/scratch/*
 """
 
 WASMTIME_RULE = """
@@ -37,6 +38,7 @@ WASMTIME_RULE = """
                         %(size)s \\
                         %(block_size)s \\
                         %(run)s ) )
+        rm -rf target/scratch/*
 """
 
 
@@ -50,9 +52,19 @@ MODES = [
     "write_random",
     "update_random",
     "read_random",
+    "small_write_inorder",
+    "small_update_inorder",
+    "small_read_inorder",
+    "small_write_reversed",
+    "small_update_reversed",
+    "small_read_reversed",
+    "small_write_random",
+    "small_update_random",
+    "small_read_random",
 ]
 
-SIZES = [2**x for x in range(10, 33+1, 3)]
+#SIZES = [2**x for x in range(10, 33+1, 3)]
+SIZES = [2**x for x in range(10, 30+1, 3)]
 BLOCK_SIZE = 512
 RUNS = 5
 

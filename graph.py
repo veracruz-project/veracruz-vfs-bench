@@ -3,6 +3,7 @@
 import sys
 import json
 import re
+import itertools as it
 
 import matplotlib
 matplotlib.use('SVG')
@@ -16,6 +17,11 @@ MODES = [
     'read',
     'write',
     'update',
+]
+
+TYPES = [
+    'large',
+    'small'
 ]
 
 ORDERS = [
@@ -80,19 +86,21 @@ def main(graph_path, *results):
     matplotlib.rc('xtick', labelsize='small')
     matplotlib.rc('ytick', labelsize='small')
 
-    gs = gridspec.GridSpec(nrows=len(ORDERS), ncols=len(MODES),
+    gs = gridspec.GridSpec(nrows=len(TYPES)*len(ORDERS), ncols=len(MODES),
          wspace=0.25, hspace=0.35)
 
-    fig = plt.figure(figsize=(len(MODES)*6, len(ORDERS)*3.5))
+    fig = plt.figure(figsize=(len(MODES)*6, len(TYPES)*len(ORDERS)*3.5))
 
-    for y, order in enumerate(ORDERS):
+    for y, (type, order) in enumerate(it.product(TYPES, ORDERS)):
         for x, mode in enumerate(MODES):
             ax = fig.add_subplot(gs[y, x])
-            ax.text(0.5, 1.025, '%s large-file %s' % (mode, order), ha='center',
+            ax.text(0.5, 1.025,
+                '%s %s %s' % (mode, "large-file" if type == 'large' else "small-files", order),
+                ha='center',
                 transform=ax.transAxes)
 
             for i, (engine, results) in enumerate(result_map):
-                name = '%s_%s' % (mode, order)
+                name = '%s%s_%s' % ('' if type == 'large' else 'small_', mode, order)
                 sizes = ['%09x' % r['size']
                     for r in results
                     if r['name'] == name]
