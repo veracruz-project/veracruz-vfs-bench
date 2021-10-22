@@ -19,7 +19,9 @@ MODES = [
 ]
 
 ORDERS = [
-    'inorder'
+    'inorder',
+    'reversed',
+    'random'
 ]
 
 # seaborn color palette
@@ -61,11 +63,16 @@ def size_si(x, pos=None):
             return '%s %sB' % (
                 re.sub(r'\.0*$', '', ('%.3f'%(x/scale))[:3]), si)
 
-def main(results_path, graph_path):
+def main(graph_path, *results):
     # parse results
-    with open(results_path) as f:
-        results = json.load(f)
-        results = sorted(results, key=lambda x: x["size"])
+    result_map = []
+    for result_tuple in results:
+        name, path = result_tuple.split('=', 1)
+        with open(path) as f:
+            results = json.load(f)
+            results = sorted(results, key=lambda x: x["size"])
+
+        result_map.append((name, results))
 
     # construct the graph
     matplotlib.rc('font', family='sans-serif', size=11)
@@ -73,67 +80,68 @@ def main(results_path, graph_path):
     matplotlib.rc('xtick', labelsize='small')
     matplotlib.rc('ytick', labelsize='small')
 
-    gs = gridspec.GridSpec(nrows=1, ncols=len(MODES),
-         wspace=0.25, hspace=0.25)
+    gs = gridspec.GridSpec(nrows=len(ORDERS), ncols=len(MODES),
+         wspace=0.25, hspace=0.35)
 
-    fig = plt.figure(figsize=(len(MODES)*6, 1*3.5))
+    fig = plt.figure(figsize=(len(MODES)*6, len(ORDERS)*3.5))
 
-    for x, mode in enumerate(MODES):
-        ax = fig.add_subplot(gs[0, x])
-        ax.text(0.5, 1.125, mode, ha='center',
-            transform=ax.transAxes)
+    for y, order in enumerate(ORDERS):
+        for x, mode in enumerate(MODES):
+            ax = fig.add_subplot(gs[y, x])
+            ax.text(0.5, 1.025, '%s large-file %s' % (mode, order), ha='center',
+                transform=ax.transAxes)
 
-        for i, order in enumerate(ORDERS):
-            name = '_'.join([mode, order])
-            sizes = ['%09x' % r['size']
-                for r in results
-                if r['name'] == name]
-            throughputs = [float(r['size']) / float(r['runtime'])
-                for r in results
-                if r['name'] == name]
+            for i, (engine, results) in enumerate(result_map):
+                name = '%s_%s' % (mode, order)
+                sizes = ['%09x' % r['size']
+                    for r in results
+                    if r['name'] == name]
+                throughputs = [float(r['size']) / float(r['runtime'])
+                    for r in results
+                    if r['name'] == name]
 
-            # plot each measurement as points
-            ax.plot(
-                sizes,
-                throughputs,
-                '.',
-                color=COLORS[i], alpha=0.75)
+                # plot each measurement as points
+                ax.plot(
+                    sizes,
+                    throughputs,
+                    '.',
+                    color=COLORS[i], alpha=0.75)
 
-            unique_sizes = []
-            for s in sizes:
-                if s not in unique_sizes:
-                    unique_sizes.append(s)
-            unique_throughputs = []
-            for s in unique_sizes:
-                unique_throughputs.append(
-                    [t for s_t, t in zip(sizes, throughputs) if s_t == s])
+                unique_sizes = []
+                for s in sizes:
+                    if s not in unique_sizes:
+                        unique_sizes.append(s)
+                unique_throughputs = []
+                for s in unique_sizes:
+                    unique_throughputs.append(
+                        [t for s_t, t in zip(sizes, throughputs) if s_t == s])
 
-            mins = [min(ts) for ts in unique_throughputs]
-            maxs = [max(ts) for ts in unique_throughputs]
-            avgs = [sum(ts)/len(ts) for ts in unique_throughputs]
+                mins = [min(ts) for ts in unique_throughputs]
+                maxs = [max(ts) for ts in unique_throughputs]
+                avgs = [sum(ts)/len(ts) for ts in unique_throughputs]
 
-            # plot average w/ errors
-            ax.plot(
-                [str(s) for s in unique_sizes],
-                avgs,
-                '-',
-                color=COLORS[i], alpha=0.75, label=mode)
-            ax.fill_between(
-                [str(s) for s in unique_sizes],
-                mins,
-                maxs,
-                color=COLORS[i], alpha=0.25, linewidth=0)
- 
-        if x == len(MODES)-1:
-            ax.legend(loc='upper left',
-                bbox_to_anchor=(1.025, 1.05))
+                # plot average w/ errors
+                ax.plot(
+                    [str(s) for s in unique_sizes],
+                    avgs,
+                    '-',
+                    color=COLORS[i], alpha=0.75, label=engine)
+                ax.fill_between(
+                    [str(s) for s in unique_sizes],
+                    mins,
+                    maxs,
+                    color=COLORS[i], alpha=0.25, linewidth=0)
+     
+            if x == len(MODES)-1:
+                ax.legend(loc='upper left',
+                    bbox_to_anchor=(1.025, 1.05))
 
-        ax.yaxis.set_major_formatter(FuncFormatter(throughput_si))
-        ax.set_ylim(0, None)
-        #ax.set_xticks(unique_sizes)
-        ax.set_xticklabels([size_si(int(s, 16)) for s in unique_sizes])
-        ax.spines['right'].set_visible(False)
-        ax.spines['top'].set_visible(False)
+            ax.yaxis.set_major_formatter(FuncFormatter(throughput_si))
+            ax.set_ylim(0, None)
+            #ax.set_xticks(unique_sizes)
+            ax.set_xticklabels([size_si(int(s, 16)) for s in unique_sizes])
+            ax.spines['right'].set_visible(False)
+            ax.spines['top'].set_visible(False)
 
     fig.tight_layout()
     plt.savefig(graph_path, bbox_inches="tight")

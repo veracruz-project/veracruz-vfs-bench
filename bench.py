@@ -7,11 +7,11 @@ import glob
 import json
 
 
-RULE = """
+VC_FEE_RULE = """
 .PHONY: %(target)s
 %(target)s:
         $(strip ( \\
-                cd target/vc-fee && \\
+                cd target && \\
                 vc-fee -de -x jit \\
                         --arg veracruz-vfs-bench \\
                         --arg %(mode)s \\
@@ -24,17 +24,47 @@ RULE = """
                         -o results ) )
 """
 
+WASMTIME_RULE = """
+.PHONY: %(target)s
+%(target)s:
+        $(strip ( \\
+                cd target && \\
+                wasmtime \\
+                        --mapdir /scratch::./scratch \\
+                        --mapdir /results::./results \\
+                        programs/veracruz-vfs-bench.wasm \\
+                        %(mode)s \\
+                        %(size)s \\
+                        %(block_size)s \\
+                        %(run)s ) )
+"""
+
+
 MODES = [
     "write_inorder",
     "update_inorder",
     "read_inorder",
+    "write_reversed",
+    "update_reversed",
+    "read_reversed",
+    "write_random",
+    "update_random",
+    "read_random",
 ]
 
 SIZES = [2**x for x in range(10, 33+1, 3)]
 BLOCK_SIZE = 512
 RUNS = 5
 
-def main(results_path="target/results.json", jobs=1):
+def main(engine="vc-fee", results_path="target/results.json", jobs=1):
+    if engine == "vc-fee":
+        rule = VC_FEE_RULE
+    elif engine == "wasmtime":
+        rule = WASMTIME_RULE
+    else:
+        print("unknown engine %s?" % engine)
+        return 1
+
     # create makefile
     with open('target/bench.mk', 'w') as mk:
         targets = []
@@ -45,7 +75,7 @@ def main(results_path="target/results.json", jobs=1):
                     targets.append(target)
 
                     mk.write(
-                        RULE.replace(4*' ', '\t') % dict(
+                        rule.replace(4*' ', '\t') % dict(
                             target=target,
                             mode=mode,
                             size=size,
@@ -63,7 +93,7 @@ def main(results_path="target/results.json", jobs=1):
     # aggregate results
     print("aggregating into %s..." % results_path)
     results = []
-    for result in glob.glob("target/vc-fee/results/*.json"):
+    for result in glob.glob("target/results/*.json"):
         with open(result) as f:
             result = json.load(f)
             results.append(result)
@@ -76,4 +106,4 @@ def main(results_path="target/results.json", jobs=1):
 
 
 if __name__ == "__main__":
-    main(*sys.argv[1:])
+    sys.exit(main(*sys.argv[1:]))
