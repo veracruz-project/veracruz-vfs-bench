@@ -23,6 +23,7 @@ use std::{
 };
 
 mod large_file;
+mod incremental_file;
 mod small_files;
 
 
@@ -37,24 +38,33 @@ fn main() {
 
     let mode = &args[1];
     let benchmark = match args[1].as_ref() {
-        "write_inorder"         => large_file::write_inorder,
-        "update_inorder"        => large_file::update_inorder,
-        "read_inorder"          => large_file::read_inorder,
-        "write_reversed"        => large_file::write_reversed,
-        "update_reversed"       => large_file::update_reversed,
-        "read_reversed"         => large_file::read_reversed,
-        "write_random"          => large_file::write_random,
-        "update_random"         => large_file::update_random,
-        "read_random"           => large_file::read_random,
-        "small_write_inorder"   => small_files::write_inorder,
-        "small_read_inorder"    => small_files::read_inorder,
-        "small_update_inorder"  => small_files::update_inorder,
-        "small_write_reversed"  => small_files::write_reversed,
-        "small_read_reversed"   => small_files::read_reversed,
-        "small_update_reversed" => small_files::update_reversed,
-        "small_write_random"    => small_files::write_random,
-        "small_read_random"     => small_files::read_random,
-        "small_update_random"   => small_files::update_random,
+        "write_inorder"                 => large_file::write_inorder,
+        "update_inorder"                => large_file::update_inorder,
+        "read_inorder"                  => large_file::read_inorder,
+        "write_reversed"                => large_file::write_reversed,
+        "update_reversed"               => large_file::update_reversed,
+        "read_reversed"                 => large_file::read_reversed,
+        "write_random"                  => large_file::write_random,
+        "update_random"                 => large_file::update_random,
+        "read_random"                   => large_file::read_random,
+        "incremental_write_inorder"     => incremental_file::write_inorder,
+        "incremental_update_inorder"    => incremental_file::update_inorder,
+        "incremental_read_inorder"      => incremental_file::read_inorder,
+        "incremental_write_reversed"    => incremental_file::write_reversed,
+        "incremental_update_reversed"   => incremental_file::update_reversed,
+        "incremental_read_reversed"     => incremental_file::read_reversed,
+        "incremental_write_random"      => incremental_file::write_random,
+        "incremental_update_random"     => incremental_file::update_random,
+        "incremental_read_random"       => incremental_file::read_random,
+        "small_write_inorder"           => small_files::write_inorder,
+        "small_read_inorder"            => small_files::read_inorder,
+        "small_update_inorder"          => small_files::update_inorder,
+        "small_write_reversed"          => small_files::write_reversed,
+        "small_read_reversed"           => small_files::read_reversed,
+        "small_update_reversed"         => small_files::update_reversed,
+        "small_write_random"            => small_files::write_random,
+        "small_read_random"             => small_files::read_random,
+        "small_update_random"           => small_files::update_random,
         _ => {
             eprintln!("Unknown mode {:?}", mode);
             return;

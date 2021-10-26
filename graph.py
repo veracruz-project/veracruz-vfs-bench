@@ -20,8 +20,9 @@ MODES = [
 ]
 
 TYPES = [
-    'large',
-    'small'
+    ('large-file', ''),
+    ('incremental-file', 'incremental_'),
+    ('small-files', 'small_')
 ]
 
 ORDERS = [
@@ -91,16 +92,16 @@ def main(graph_path, *results):
 
     fig = plt.figure(figsize=(len(MODES)*6, len(TYPES)*len(ORDERS)*3.5))
 
-    for y, (type, order) in enumerate(it.product(TYPES, ORDERS)):
+    for y, ((type_name, type_prefix), order) in enumerate(it.product(TYPES, ORDERS)):
         for x, mode in enumerate(MODES):
             ax = fig.add_subplot(gs[y, x])
             ax.text(0.5, 1.025,
-                '%s %s %s' % (mode, "large-file" if type == 'large' else "small-files", order),
+                '%s %s %s' % (mode, type_name, order),
                 ha='center',
                 transform=ax.transAxes)
 
             for i, (engine, results) in enumerate(result_map):
-                name = '%s%s_%s' % ('' if type == 'large' else 'small_', mode, order)
+                name = '%s%s_%s' % (type_prefix, mode, order)
                 sizes = ['%09x' % r['size']
                     for r in results
                     if r['name'] == name]
