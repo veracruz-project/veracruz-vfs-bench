@@ -22,7 +22,6 @@ MODES = [
 TYPES = [
     ('large-file', ''),
     ('incremental-file', 'incremental_'),
-    ('small-files', 'small_')
 ]
 
 ORDERS = [
@@ -77,7 +76,7 @@ def main(graph_path, *results):
         name, path = result_tuple.split('=', 1)
         with open(path) as f:
             results = json.load(f)
-            results = sorted(results, key=lambda x: x["size"])
+            results = sorted(results, key=lambda x: x["block_size"])
 
         result_map.append((name, results))
 
@@ -102,7 +101,7 @@ def main(graph_path, *results):
 
             for i, (engine, results) in enumerate(result_map):
                 name = '%s%s_%s' % (type_prefix, mode, order)
-                sizes = ['%09x' % r['size']
+                sizes = ['%09x' % r['block_size']
                     for r in results
                     if r['name'] == name]
                 throughputs = [float(r['size']) / float(r['runtime'])
@@ -148,7 +147,7 @@ def main(graph_path, *results):
             ax.yaxis.set_major_formatter(FuncFormatter(throughput_si))
             ax.set_ylim(0, None)
             #ax.set_xticks(unique_sizes)
-            ax.set_xticklabels([size_si(int(s, 16)) for s in unique_sizes])
+            ax.set_xticklabels([size_si(int(s, 16)) for s in unique_sizes], rotation=270)
             ax.spines['right'].set_visible(False)
             ax.spines['top'].set_visible(False)
 

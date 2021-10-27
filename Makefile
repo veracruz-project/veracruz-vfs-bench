@@ -9,6 +9,8 @@
 # See the `LICENSING.markdown` file in the Veracruz root directory for
 # licensing and copyright information.
 
+VARIABLE ?= "sizes"
+
 .PHONY: all
 all build:
 	cargo build --target wasm32-wasi --release
@@ -25,20 +27,20 @@ all build:
 
 .PHONY: bench-vc-fee
 bench-vc-fee: build
-	./bench.py vc-fee target/results-vc-fee.json $(JOBS)
+	./bench-$(VARIABLE).py vc-fee target/results-vc-fee-$(VARIABLE).json $(JOBS)
 
 .PHONY: bench-wasmtime
 bench-wasmtime: build
-	./bench.py wasmtime target/results-wasmtime.json $(JOBS)
+	./bench-$(VARIABLE).py wasmtime target/results-wasmtime-$(VARIABLE).json $(JOBS)
 
 .PHONY: bench
 bench: bench-vc-fee bench-wasmtime
 
 .PHONY: graph
 graph:
-	$(strip ./graph.py target/results.svg \
-		vc-fee=target/results-vc-fee.json \
-		"wasmtime + ramfs"=target/results-wasmtime.json )
+	$(strip ./graph-$(VARIABLE).py target/results-$(VARIABLE).svg \
+		vc-fee=target/results-vc-fee-$(VARIABLE).json \
+		"wasmtime + ramfs"=target/results-wasmtime-$(VARIABLE).json )
 
 .PHONY: fmt
 fmt:

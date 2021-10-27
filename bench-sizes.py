@@ -72,9 +72,9 @@ MODES = [
     "small_read_random",
 ]
 
-#SIZES = [2**x for x in range(10, 33+1, 3)]
 SIZES = [2**x for x in range(10, 30+1, 3)]
 BLOCK_SIZE = 512
+
 RUNS = 5
 
 def main(engine="vc-fee", results_path="target/results.json", jobs=1):
@@ -91,19 +91,20 @@ def main(engine="vc-fee", results_path="target/results.json", jobs=1):
         targets = []
         for mode in MODES:
             for size in SIZES:
-                for run in range(RUNS):
-                    target = "bench_%s_%s_%s_%s" % (mode, size, BLOCK_SIZE, run)
-                    targets.append(target)
+                for block_size in [BLOCK_SIZE]:
+                    for run in range(RUNS):
+                        target = "bench_%s_%s_%s_%s" % (mode, size, block_size, run)
+                        targets.append(target)
 
-                    mk.write(
-                        rule.replace(4*' ', '\t') % dict(
-                            target=target,
-                            mode=mode,
-                            size=size,
-                            block_size=BLOCK_SIZE,
-                            run=run,
+                        mk.write(
+                            rule.replace(4*' ', '\t') % dict(
+                                target=target,
+                                mode=mode,
+                                size=size,
+                                block_size=block_size,
+                                run=run,
+                            )
                         )
-                    )
 
     # run benchmarks, note that make should pick up the MAKEFLAGS env variable
     # if we're called from a makefile
