@@ -22,7 +22,8 @@ use std::{
     fs,
 };
 
-mod large_file;
+mod file;
+mod buffered_file;
 mod incremental_file;
 mod small_files;
 
@@ -38,15 +39,24 @@ fn main() {
 
     let mode = &args[1];
     let benchmark = match args[1].as_ref() {
-        "write_inorder"                 => large_file::write_inorder,
-        "update_inorder"                => large_file::update_inorder,
-        "read_inorder"                  => large_file::read_inorder,
-        "write_reversed"                => large_file::write_reversed,
-        "update_reversed"               => large_file::update_reversed,
-        "read_reversed"                 => large_file::read_reversed,
-        "write_random"                  => large_file::write_random,
-        "update_random"                 => large_file::update_random,
-        "read_random"                   => large_file::read_random,
+        "write_inorder"                 => file::write_inorder,
+        "update_inorder"                => file::update_inorder,
+        "read_inorder"                  => file::read_inorder,
+        "write_reversed"                => file::write_reversed,
+        "update_reversed"               => file::update_reversed,
+        "read_reversed"                 => file::read_reversed,
+        "write_random"                  => file::write_random,
+        "update_random"                 => file::update_random,
+        "read_random"                   => file::read_random,
+        "buffered_write_inorder"        => buffered_file::write_inorder,
+        "buffered_update_inorder"       => buffered_file::update_inorder,
+        "buffered_read_inorder"         => buffered_file::read_inorder,
+        "buffered_write_reversed"       => buffered_file::write_reversed,
+        "buffered_update_reversed"      => buffered_file::update_reversed,
+        "buffered_read_reversed"        => buffered_file::read_reversed,
+        "buffered_write_random"         => buffered_file::write_random,
+        "buffered_update_random"        => buffered_file::update_random,
+        "buffered_read_random"          => buffered_file::read_random,
         "incremental_write_inorder"     => incremental_file::write_inorder,
         "incremental_update_inorder"    => incremental_file::update_inorder,
         "incremental_read_inorder"      => incremental_file::read_inorder,

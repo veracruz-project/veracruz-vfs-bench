@@ -19,6 +19,7 @@ use std::{
     io::Read,
     io::Seek,
     io::SeekFrom,
+    io::BufWriter,
     iter,
     mem,
     ops::DerefMut,
@@ -82,7 +83,7 @@ pub fn write_inorder(size: u64, block_size: usize, run: u32) -> Duration {
 /// Update a large file in-order
 pub fn update_inorder(size: u64, block_size: usize, run: u32) -> Duration {
     let path = format!("/scratch/update_inorder_{}_{}_{}.txt", size, block_size, run);
-    let mut file = File::create(&path).unwrap();
+    let mut file = BufWriter::new(File::create(&path).unwrap());
     let mut prng = xorshift64(42);
     let mut buffer = vec![0u8; block_size];
 
@@ -142,7 +143,7 @@ pub fn update_inorder(size: u64, block_size: usize, run: u32) -> Duration {
 /// Read a large file in-order
 pub fn read_inorder(size: u64, block_size: usize, run: u32) -> Duration {
     let path = format!("/scratch/read_inorder_{}_{}_{}.txt", size, block_size, run);
-    let mut file = File::create(&path).unwrap();
+    let mut file = BufWriter::new(File::create(&path).unwrap());
     let mut prng = xorshift64(42);
     let mut buffer = vec![0u8; block_size];
 
@@ -242,7 +243,7 @@ pub fn write_reversed(size: u64, block_size: usize, run: u32) -> Duration {
 /// Update a large file in reverse-order
 pub fn update_reversed(size: u64, block_size: usize, run: u32) -> Duration {
     let path = format!("/scratch/update_reversed_{}_{}_{}.txt", size, block_size, run);
-    let mut file = File::create(&path).unwrap();
+    let mut file = BufWriter::new(File::create(&path).unwrap());
     let mut prng = xorshift64(42);
     let mut buffer = vec![0u8; block_size];
 
@@ -309,7 +310,7 @@ pub fn update_reversed(size: u64, block_size: usize, run: u32) -> Duration {
 /// Read a large file in reverse-order
 pub fn read_reversed(size: u64, block_size: usize, run: u32) -> Duration {
     let path = format!("/scratch/read_reversed_{}_{}_{}.txt", size, block_size, run);
-    let mut file = File::create(&path).unwrap();
+    let mut file = BufWriter::new(File::create(&path).unwrap());
     let mut prng = xorshift64(42);
     let mut buffer = vec![0u8; block_size];
 
@@ -419,7 +420,7 @@ pub fn write_random(size: u64, block_size: usize, run: u32) -> Duration {
 /// Update a large file in reverse-order
 pub fn update_random(size: u64, block_size: usize, run: u32) -> Duration {
     let path = format!("/scratch/update_random_{}_{}_{}.txt", size, block_size, run);
-    let mut file = File::create(&path).unwrap();
+    let mut file = BufWriter::new(File::create(&path).unwrap());
     let prng = RefCell::new(xorshift64(42));
     let mut buffer = vec![0u8; block_size];
 
@@ -491,7 +492,7 @@ pub fn update_random(size: u64, block_size: usize, run: u32) -> Duration {
 /// Read a large file in reverse-order
 pub fn read_random(size: u64, block_size: usize, run: u32) -> Duration {
     let path = format!("/scratch/read_random_{}_{}_{}.txt", size, block_size, run);
-    let mut file = File::create(&path).unwrap();
+    let mut file = BufWriter::new(File::create(&path).unwrap());
     let mut prng = xorshift64(42);
     let mut buffer = vec![0u8; block_size];
 

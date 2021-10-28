@@ -1,5 +1,4 @@
-//! Benchmark of filesystem operations over one large file which is reopened
-//! after every read/write
+//! Benchmark of filesystem operations over one large file
 //!
 //! ## Authors
 //!
@@ -15,12 +14,12 @@ use std::{
     cmp::min,
     convert::TryFrom,
     fs::File,
-    fs::OpenOptions,
     hint,
     io::Write,
     io::Read,
     io::Seek,
     io::SeekFrom,
+    io::BufReader,
     io::BufWriter,
     iter,
     mem,
@@ -43,7 +42,8 @@ fn xorshift64(seed: u64) -> impl Iterator<Item=u64> {
 
 /// Write a large file in-order
 pub fn write_inorder(size: u64, block_size: usize, run: u32) -> Duration {
-    let path = format!("/scratch/incremental_write_inorder_{}_{}_{}.txt", size, block_size, run);
+    let path = format!("/scratch/buffered_write_inorder_{}_{}_{}.txt", size, block_size, run);
+    let mut file = BufWriter::new(File::create(&path).unwrap());
     let mut prng = xorshift64(42);
     let mut buffer = vec![0u8; block_size];
 
@@ -62,23 +62,21 @@ pub fn write_inorder(size: u64, block_size: usize, run: u32) -> Duration {
 
         
         hint::black_box({
-            let mut file = OpenOptions::new()
-                .write(true)
-                .create(true)
-                .append(true)
-                .open(&path).unwrap();
             let input = hint::black_box(&buffer);
             file.write_all(input).unwrap();
-            file.flush().unwrap();
         });
     }
+
+    hint::black_box({
+        file.flush().unwrap();
+    });
 
     let duration = stopwatch.elapsed();
 
     // Truncate the file! Otherwise Veracruz may try to copy it back over
     // into the user's fs, which is a waste of (significant) time...
     //
-    let file = File::create(&path).unwrap();
+    let file = file.into_inner().unwrap();
     file.set_len(0).unwrap();
 
     duration
@@ -86,7 +84,7 @@ pub fn write_inorder(size: u64, block_size: usize, run: u32) -> Duration {
 
 /// Update a large file in-order
 pub fn update_inorder(size: u64, block_size: usize, run: u32) -> Duration {
-    let path = format!("/scratch/incremental_update_inorder_{}_{}_{}.txt", size, block_size, run);
+    let path = format!("/scratch/buffered_update_inorder_{}_{}_{}.txt", size, block_size, run);
     let mut file = BufWriter::new(File::create(&path).unwrap());
     let mut prng = xorshift64(42);
     let mut buffer = vec![0u8; block_size];
@@ -107,6 +105,7 @@ pub fn update_inorder(size: u64, block_size: usize, run: u32) -> Duration {
     }
 
     mem::drop(file);
+    let mut file = BufWriter::new(File::create(&path).unwrap());
 
     // now measure updates
     let stopwatch = Instant::now();
@@ -124,22 +123,21 @@ pub fn update_inorder(size: u64, block_size: usize, run: u32) -> Duration {
 
         
         hint::black_box({
-            let mut file = OpenOptions::new()
-                .write(true)
-                .open(&path).unwrap();
-            file.seek(SeekFrom::Start(i)).unwrap();
             let input = hint::black_box(&buffer);
             file.write_all(input).unwrap();
-            file.flush().unwrap();
         });
     }
+
+    hint::black_box({
+        file.flush().unwrap();
+    });
 
     let duration = stopwatch.elapsed();
 
     // Truncate the file! Otherwise Veracruz may try to copy it back over
     // into the user's fs, which is a waste of (significant) time...
     //
-    let file = File::create(&path).unwrap();
+    let file = file.into_inner().unwrap();
     file.set_len(0).unwrap();
 
     duration
@@ -147,7 +145,7 @@ pub fn update_inorder(size: u64, block_size: usize, run: u32) -> Duration {
 
 /// Read a large file in-order
 pub fn read_inorder(size: u64, block_size: usize, run: u32) -> Duration {
-    let path = format!("/scratch/incremental_read_inorder_{}_{}_{}.txt", size, block_size, run);
+    let path = format!("/scratch/buffered_read_inorder_{}_{}_{}.txt", size, block_size, run);
     let mut file = BufWriter::new(File::create(&path).unwrap());
     let mut prng = xorshift64(42);
     let mut buffer = vec![0u8; block_size];
@@ -168,6 +166,7 @@ pub fn read_inorder(size: u64, block_size: usize, run: u32) -> Duration {
     }
 
     mem::drop(file);
+    let mut file = BufReader::new(File::open(&path).unwrap());
 
     // Now measure reads
     let stopwatch = Instant::now();
@@ -178,10 +177,6 @@ pub fn read_inorder(size: u64, block_size: usize, run: u32) -> Duration {
         ).unwrap();
         
         hint::black_box({
-            let mut file = OpenOptions::new()
-                .read(true)
-                .open(&path).unwrap();
-            file.seek(SeekFrom::Start(i)).unwrap();
             file.read_exact(hint::black_box(&mut buffer[..step_size])).unwrap();
             &buffer
         });
@@ -189,10 +184,12 @@ pub fn read_inorder(size: u64, block_size: usize, run: u32) -> Duration {
 
     let duration = stopwatch.elapsed();
 
+    mem::drop(file);
+    let file = File::create(&path).unwrap();
+
     // Truncate the file! Otherwise Veracruz may try to copy it back over
     // into the user's fs, which is a waste of (significant) time...
     //
-    let file = File::create(&path).unwrap();
     file.set_len(0).unwrap();
 
     duration
@@ -200,7 +197,8 @@ pub fn read_inorder(size: u64, block_size: usize, run: u32) -> Duration {
 
 /// Write a large file in reverse-order
 pub fn write_reversed(size: u64, block_size: usize, run: u32) -> Duration {
-    let path = format!("/scratch/incremental_write_reversed_{}_{}_{}.txt", size, block_size, run);
+    let path = format!("/scratch/buffered_write_reversed_{}_{}_{}.txt", size, block_size, run);
+    let mut file = BufWriter::new(File::create(&path).unwrap());
     let mut prng = xorshift64(42);
     let mut buffer = vec![0u8; block_size];
 
@@ -224,23 +222,23 @@ pub fn write_reversed(size: u64, block_size: usize, run: u32) -> Duration {
 
         
         hint::black_box({
-            let mut file = OpenOptions::new()
-                .write(true)
-                .create(true)
-                .open(&path).unwrap();
             file.seek(SeekFrom::Start(i)).unwrap();
+
             let input = hint::black_box(&buffer);
             file.write_all(input).unwrap();
-            file.flush().unwrap();
         });
     }
+
+    hint::black_box({
+        file.flush().unwrap();
+    });
 
     let duration = stopwatch.elapsed();
 
     // Truncate the file! Otherwise Veracruz may try to copy it back over
     // into the user's fs, which is a waste of (significant) time...
     //
-    let file = File::create(&path).unwrap();
+    let file = file.into_inner().unwrap();
     file.set_len(0).unwrap();
 
     duration
@@ -248,7 +246,7 @@ pub fn write_reversed(size: u64, block_size: usize, run: u32) -> Duration {
 
 /// Update a large file in reverse-order
 pub fn update_reversed(size: u64, block_size: usize, run: u32) -> Duration {
-    let path = format!("/scratch/incremental_update_reversed_{}_{}_{}.txt", size, block_size, run);
+    let path = format!("/scratch/buffered_update_reversed_{}_{}_{}.txt", size, block_size, run);
     let mut file = BufWriter::new(File::create(&path).unwrap());
     let mut prng = xorshift64(42);
     let mut buffer = vec![0u8; block_size];
@@ -269,6 +267,7 @@ pub fn update_reversed(size: u64, block_size: usize, run: u32) -> Duration {
     }
 
     mem::drop(file);
+    let mut file = BufWriter::new(File::create(&path).unwrap());
 
     // now measure updates
     let stopwatch = Instant::now();
@@ -291,22 +290,23 @@ pub fn update_reversed(size: u64, block_size: usize, run: u32) -> Duration {
 
         
         hint::black_box({
-            let mut file = OpenOptions::new()
-                .write(true)
-                .open(&path).unwrap();
             file.seek(SeekFrom::Start(i)).unwrap();
+
             let input = hint::black_box(&buffer);
             file.write_all(input).unwrap();
-            file.flush().unwrap();
         });
     }
+
+    hint::black_box({
+        file.flush().unwrap();
+    });
 
     let duration = stopwatch.elapsed();
 
     // Truncate the file! Otherwise Veracruz may try to copy it back over
     // into the user's fs, which is a waste of (significant) time...
     //
-    let file = File::create(&path).unwrap();
+    let file = file.into_inner().unwrap();
     file.set_len(0).unwrap();
 
     duration
@@ -314,7 +314,7 @@ pub fn update_reversed(size: u64, block_size: usize, run: u32) -> Duration {
 
 /// Read a large file in reverse-order
 pub fn read_reversed(size: u64, block_size: usize, run: u32) -> Duration {
-    let path = format!("/scratch/incremental_read_reversed_{}_{}_{}.txt", size, block_size, run);
+    let path = format!("/scratch/buffered_read_reversed_{}_{}_{}.txt", size, block_size, run);
     let mut file = BufWriter::new(File::create(&path).unwrap());
     let mut prng = xorshift64(42);
     let mut buffer = vec![0u8; block_size];
@@ -335,6 +335,7 @@ pub fn read_reversed(size: u64, block_size: usize, run: u32) -> Duration {
     }
 
     mem::drop(file);
+    let mut file = BufReader::new(File::open(&path).unwrap());
 
     // Now measure reads
     let stopwatch = Instant::now();
@@ -350,10 +351,8 @@ pub fn read_reversed(size: u64, block_size: usize, run: u32) -> Duration {
         ).unwrap();
         
         hint::black_box({
-            let mut file = OpenOptions::new()
-                .read(true)
-                .open(&path).unwrap();
             file.seek(SeekFrom::Start(i)).unwrap();
+
             file.read_exact(hint::black_box(&mut buffer[..step_size])).unwrap();
             &buffer
         });
@@ -361,10 +360,12 @@ pub fn read_reversed(size: u64, block_size: usize, run: u32) -> Duration {
 
     let duration = stopwatch.elapsed();
 
+    mem::drop(file);
+    let file = File::create(&path).unwrap();
+
     // Truncate the file! Otherwise Veracruz may try to copy it back over
     // into the user's fs, which is a waste of (significant) time...
     //
-    let file = File::create(&path).unwrap();
     file.set_len(0).unwrap();
 
     duration
@@ -372,7 +373,8 @@ pub fn read_reversed(size: u64, block_size: usize, run: u32) -> Duration {
 
 /// Write a large file in reverse-order
 pub fn write_random(size: u64, block_size: usize, run: u32) -> Duration {
-    let path = format!("/scratch/incremental_write_random_{}_{}_{}.txt", size, block_size, run);
+    let path = format!("/scratch/buffered_write_random_{}_{}_{}.txt", size, block_size, run);
+    let mut file = BufWriter::new(File::create(&path).unwrap());
     let prng = RefCell::new(xorshift64(42));
     let mut buffer = vec![0u8; block_size];
 
@@ -399,23 +401,23 @@ pub fn write_random(size: u64, block_size: usize, run: u32) -> Duration {
 
         
         hint::black_box({
-            let mut file = OpenOptions::new()
-                .write(true)
-                .create(true)
-                .open(&path).unwrap();
             file.seek(SeekFrom::Start(i)).unwrap();
+
             let input = hint::black_box(&buffer);
             file.write_all(input).unwrap();
-            file.flush().unwrap();
         });
     }
+
+    hint::black_box({
+        file.flush().unwrap();
+    });
 
     let duration = stopwatch.elapsed();
 
     // Truncate the file! Otherwise Veracruz may try to copy it back over
     // into the user's fs, which is a waste of (significant) time...
     //
-    let file = File::create(&path).unwrap();
+    let file = file.into_inner().unwrap();
     file.set_len(0).unwrap();
 
     duration
@@ -423,7 +425,7 @@ pub fn write_random(size: u64, block_size: usize, run: u32) -> Duration {
 
 /// Update a large file in reverse-order
 pub fn update_random(size: u64, block_size: usize, run: u32) -> Duration {
-    let path = format!("/scratch/incremental_update_random_{}_{}_{}.txt", size, block_size, run);
+    let path = format!("/scratch/buffered_update_random_{}_{}_{}.txt", size, block_size, run);
     let mut file = BufWriter::new(File::create(&path).unwrap());
     let prng = RefCell::new(xorshift64(42));
     let mut buffer = vec![0u8; block_size];
@@ -446,6 +448,7 @@ pub fn update_random(size: u64, block_size: usize, run: u32) -> Duration {
     }
 
     mem::drop(file);
+    let mut file = BufWriter::new(File::create(&path).unwrap());
 
     // now measure updates
     let stopwatch = Instant::now();
@@ -471,22 +474,23 @@ pub fn update_random(size: u64, block_size: usize, run: u32) -> Duration {
 
         
         hint::black_box({
-            let mut file = OpenOptions::new()
-                .write(true)
-                .open(&path).unwrap();
             file.seek(SeekFrom::Start(i)).unwrap();
+
             let input = hint::black_box(&buffer);
             file.write_all(input).unwrap();
-            file.flush().unwrap();
         });
     }
+
+    hint::black_box({
+        file.flush().unwrap();
+    });
 
     let duration = stopwatch.elapsed();
 
     // Truncate the file! Otherwise Veracruz may try to copy it back over
     // into the user's fs, which is a waste of (significant) time...
     //
-    let file = File::create(&path).unwrap();
+    let file = file.into_inner().unwrap();
     file.set_len(0).unwrap();
 
     duration
@@ -494,7 +498,7 @@ pub fn update_random(size: u64, block_size: usize, run: u32) -> Duration {
 
 /// Read a large file in reverse-order
 pub fn read_random(size: u64, block_size: usize, run: u32) -> Duration {
-    let path = format!("/scratch/incremental_read_random_{}_{}_{}.txt", size, block_size, run);
+    let path = format!("/scratch/buffered_read_random_{}_{}_{}.txt", size, block_size, run);
     let mut file = BufWriter::new(File::create(&path).unwrap());
     let mut prng = xorshift64(42);
     let mut buffer = vec![0u8; block_size];
@@ -515,6 +519,7 @@ pub fn read_random(size: u64, block_size: usize, run: u32) -> Duration {
     }
 
     mem::drop(file);
+    let mut file = BufReader::new(File::open(&path).unwrap());
 
     // Now measure reads
     let stopwatch = Instant::now();
@@ -531,10 +536,8 @@ pub fn read_random(size: u64, block_size: usize, run: u32) -> Duration {
         ).unwrap();
         
         hint::black_box({
-            let mut file = OpenOptions::new()
-                .read(true)
-                .open(&path).unwrap();
             file.seek(SeekFrom::Start(i)).unwrap();
+
             file.read_exact(hint::black_box(&mut buffer[..step_size])).unwrap();
             &buffer
         });
@@ -542,10 +545,12 @@ pub fn read_random(size: u64, block_size: usize, run: u32) -> Duration {
 
     let duration = stopwatch.elapsed();
 
+    mem::drop(file);
+    let file = File::create(&path).unwrap();
+
     // Truncate the file! Otherwise Veracruz may try to copy it back over
     // into the user's fs, which is a waste of (significant) time...
     //
-    let file = File::create(&path).unwrap();
     file.set_len(0).unwrap();
 
     duration

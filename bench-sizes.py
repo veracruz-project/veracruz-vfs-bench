@@ -72,7 +72,7 @@ MODES = [
     "small_read_random",
 ]
 
-SIZES = [2**x for x in range(10, 30+1, 3)]
+SIZES = [2**x for x in range(10, 28+1, 3)]
 BLOCK_SIZE = 512
 
 RUNS = 5

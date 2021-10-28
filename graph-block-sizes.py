@@ -100,45 +100,53 @@ def main(graph_path, *results):
                 transform=ax.transAxes)
 
             for i, (engine, results) in enumerate(result_map):
-                name = '%s%s_%s' % (type_prefix, mode, order)
-                sizes = ['%09x' % r['block_size']
-                    for r in results
-                    if r['name'] == name]
-                throughputs = [float(r['size']) / float(r['runtime'])
-                    for r in results
-                    if r['name'] == name]
+                was_buffered = True
+                for buffered in [True, False]:
+                    name = '%s%s%s_%s' % (type_prefix, 'buffered_' if buffered else '', mode, order)
+                    sizes = ['%09x' % r['block_size']
+                        for r in results
+                        if r['name'] == name]
+                    throughputs = [float(r['size']) / float(r['runtime'])
+                        for r in results
+                        if r['name'] == name]
 
-                # plot each measurement as points
-                ax.plot(
-                    sizes,
-                    throughputs,
-                    '.',
-                    color=COLORS[i], alpha=0.75)
+                    if len(sizes) == 0:
+                        was_buffered = False
+                        continue
+                    elif not was_buffered:
+                        buffered = True
 
-                unique_sizes = []
-                for s in sizes:
-                    if s not in unique_sizes:
-                        unique_sizes.append(s)
-                unique_throughputs = []
-                for s in unique_sizes:
-                    unique_throughputs.append(
-                        [t for s_t, t in zip(sizes, throughputs) if s_t == s])
+                    # plot each measurement as points
+                    ax.plot(
+                        sizes,
+                        throughputs,
+                        '.',
+                        color=COLORS[i], alpha=0.75)
 
-                mins = [min(ts) for ts in unique_throughputs]
-                maxs = [max(ts) for ts in unique_throughputs]
-                avgs = [sum(ts)/len(ts) for ts in unique_throughputs]
+                    unique_sizes = []
+                    for s in sizes:
+                        if s not in unique_sizes:
+                            unique_sizes.append(s)
+                    unique_throughputs = []
+                    for s in unique_sizes:
+                        unique_throughputs.append(
+                            [t for s_t, t in zip(sizes, throughputs) if s_t == s])
 
-                # plot average w/ errors
-                ax.plot(
-                    [str(s) for s in unique_sizes],
-                    avgs,
-                    '-',
-                    color=COLORS[i], alpha=0.75, label=engine)
-                ax.fill_between(
-                    [str(s) for s in unique_sizes],
-                    mins,
-                    maxs,
-                    color=COLORS[i], alpha=0.25, linewidth=0)
+                    mins = [min(ts) for ts in unique_throughputs]
+                    maxs = [max(ts) for ts in unique_throughputs]
+                    avgs = [sum(ts)/len(ts) for ts in unique_throughputs]
+
+                    # plot average w/ errors
+                    ax.plot(
+                        [str(s) for s in unique_sizes],
+                        avgs,
+                        '-' if buffered else ':',
+                        color=COLORS[i], alpha=0.75, label=engine + ('' if buffered else ' (no bufrw)'))
+                    ax.fill_between(
+                        [str(s) for s in unique_sizes],
+                        mins,
+                        maxs,
+                        color=COLORS[i], alpha=0.25, linewidth=0)
      
             if x == len(MODES)-1:
                 ax.legend(loc='upper left',
