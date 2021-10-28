@@ -1,9 +1,9 @@
 
 ## Performance over different file sizes
 
-![results-sizes](target/results-sizes.svg)
+![results-sizes](results/results-sizes.svg)
 
 
 ## Performance over different block size
 
-![results-block-sizes](target/results-block-sizes.svg)
+![results-block-sizes](results/results-block-sizes.svg)

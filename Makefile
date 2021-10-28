@@ -38,7 +38,7 @@ bench: bench-vc-fee bench-wasmtime
 
 .PHONY: graph
 graph:
-	$(strip ./graph-$(VARIABLE).py target/results-$(VARIABLE).svg \
+	$(strip ./graph-$(VARIABLE).py results/results-$(VARIABLE).svg \
 		vc-fee=target/results-vc-fee-$(VARIABLE).json \
 		"wasmtime + ramfs"=target/results-wasmtime-$(VARIABLE).json )
 
