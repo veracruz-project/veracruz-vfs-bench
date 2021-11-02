@@ -18,9 +18,8 @@ all build:
 	mkdir -p target/results
 	mkdir -p target/scratch
 	$(strip ! mountpoint -q target/scratch \
-		&& sudo mount -t ramfs ramfs target/scratch \
-		&& sudo chmod a+rwx target/scratch \
-		|| true )
+		&& sudo mount -t tmpfs -o size=32g tmpfs target/scratch \
+		&& sudo chmod a+rwx target/scratch )
 	$(strip cp \
 		target/wasm32-wasi/release/veracruz-vfs-bench.wasm \
 		target/programs )
@@ -40,7 +39,7 @@ bench: bench-vc-fee bench-wasmtime
 graph:
 	$(strip ./graph-$(VARIABLE).py results/results-$(VARIABLE).svg \
 		vc-fee=target/results-vc-fee-$(VARIABLE).json \
-		"wasmtime + ramfs"=target/results-wasmtime-$(VARIABLE).json )
+		"wasmtime + tmpfs"=target/results-wasmtime-$(VARIABLE).json )
 
 .PHONY: fmt
 fmt:

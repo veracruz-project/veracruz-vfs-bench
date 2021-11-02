@@ -21,7 +21,7 @@ MODES = [
 
 TYPES = [
     ('large-file', ''),
-    ('incremental-file', 'incremental_'),
+#    ('incremental-file', 'incremental_'),
 ]
 
 ORDERS = [

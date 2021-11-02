@@ -61,19 +61,19 @@ MODES = [
     "buffered_write_random",
     "buffered_update_random",
     "buffered_read_random",
-    "incremental_write_inorder",
-    "incremental_update_inorder",
-    "incremental_read_inorder",
-    "incremental_write_reversed",
-    "incremental_update_reversed",
-    "incremental_read_reversed",
-    "incremental_write_random",
-    "incremental_update_random",
-    "incremental_read_random",
+#    "incremental_write_inorder",
+#    "incremental_update_inorder",
+#    "incremental_read_inorder",
+#    "incremental_write_reversed",
+#    "incremental_update_reversed",
+#    "incremental_read_reversed",
+#    "incremental_write_random",
+#    "incremental_update_random",
+#    "incremental_read_random",
 ]
 
-SIZE = 2**22
-BLOCK_SIZES = [2**x for x in range(0, 22+1, 2)]
+SIZE = 2**28
+BLOCK_SIZES = [2**x for x in range(0, 28+1, 2)]
 
 RUNS = 5
 
