@@ -17,9 +17,10 @@ all build:
 	mkdir -p target/programs
 	mkdir -p target/results
 	mkdir -p target/scratch
-	$(strip ! mountpoint -q target/scratch \
-		&& sudo mount -t tmpfs -o size=32g tmpfs target/scratch \
-		&& sudo chmod a+rwx target/scratch )
+	$(strip if ! mountpoint -q target/scratch \
+		; then sudo mount -t tmpfs -o size=32g tmpfs target/scratch \
+		&& sudo chmod a+rwx target/scratch \
+		; fi )
 	$(strip cp \
 		target/wasm32-wasi/release/veracruz-vfs-bench.wasm \
 		target/programs )

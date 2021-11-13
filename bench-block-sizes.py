@@ -72,8 +72,9 @@ MODES = [
 #    "incremental_read_random",
 ]
 
-SIZE = 2**28
-BLOCK_SIZES = [2**x for x in range(0, 28+1, 2)]
+SIZE = 2**26
+BLOCK_SIZES = [2**x for x in range(2, 26+1, 2)]
+#BLOCK_SIZES = [2**x for x in range(0, 28+1, 2)]
 
 RUNS = 5
 
